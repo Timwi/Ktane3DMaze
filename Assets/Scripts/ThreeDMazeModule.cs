@@ -88,30 +88,31 @@ public class ThreeDMazeModule : MonoBehaviour
         {
             if (button == CodeLeft)
             {
-                map.turnLeft();
+                map = map.turnLeft();
                 UpdateDisplay(map.getDefaultMapView());
             }
 
             if (button == CodeRight)
             {
-                map.turnRight();
+                map = map.turnRight();
                 UpdateDisplay(map.getDefaultMapView());
             }
 
             if (button == CodeStraight)
             {
-                int result = map.moveForward();
+                var result = map.moveForward();
 
-                if (result == Map.RESULT_OK)
+                if (result is Map)
                 {
+                    map = (Map) result;
                     UpdateDisplay(map.getDefaultMapView());
                 }
-                else if (result == Map.RESULT_FAILURE)
+                else if (result.Equals(false))
                 {
                     Debug.LogFormat("[3D Maze #{0}] You walked into a wrong wall:\n{1}", moduleId, map.GetLog());
                     BombModule.HandleStrike();
                 }
-                else if (result == Map.RESULT_SUCCESS)
+                else if (result.Equals(true))
                 {
                     BombModule.HandlePass();
                     UpdateDisplay(new MapView());
@@ -210,14 +211,56 @@ public class ThreeDMazeModule : MonoBehaviour
         }
     }
 
-    private void TwitchHandleForcedSolve()
+    private struct AutoSolverItem
     {
-        KMAudio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, this.transform);
-        GetComponent<KMSelectable>().AddInteractionPunch(0.1f);
-        BombModule.HandlePass();
-        UpdateDisplay(new MapView());
-        isComplete = true;
-        Debug.LogFormat("[3D Maze #{0}] Module forcibly solved.", moduleId);
+        public Map Current;
+        public Map Parent;
+        public int Key;
+    }
+
+    private IEnumerator TwitchHandleForcedSolve()
+    {
+        var visited = new Dictionary<Map, AutoSolverItem>();
+        var queue = new Queue<AutoSolverItem>();
+        queue.Enqueue(new AutoSolverItem { Current = map, Parent = null });
+        Map step = null;
+
+        while (queue.Count > 0)
+        {
+            var item = queue.Dequeue();
+            if (visited.ContainsKey(item.Current))
+                continue;
+            visited[item.Current] = item;
+
+            queue.Enqueue(new AutoSolverItem { Current = item.Current.turnLeft(), Parent = item.Current, Key = CodeLeft });
+            queue.Enqueue(new AutoSolverItem { Current = item.Current.turnRight(), Parent = item.Current, Key = CodeRight });
+
+            var result = item.Current.moveForward();
+            if (result.Equals(true))
+            {
+                step = item.Current;
+                goto solutionFound;
+            }
+            else if (result is Map)
+                queue.Enqueue(new AutoSolverItem { Current = (Map) result, Parent = item.Current, Key = CodeStraight });
+        }
+
+        solutionFound:
+        var path = new List<int>();
+        while (visited[step].Parent != null)
+        {
+            var asi = visited[step];
+            path.Add(asi.Key);
+            step = asi.Parent;
+        }
+        path.Reverse();
+        path.Add(CodeStraight);
+
+        foreach (var key in path)
+        {
+            (key == CodeLeft ? ButtonLeft : key == CodeRight ? ButtonRight : ButtonStraight).OnInteract();
+            yield return new WaitForSeconds(.1f);
+        }
     }
 
 #pragma warning disable 414 // Silence the compiler warning about an unused field (it’s used by TP via Reflection)

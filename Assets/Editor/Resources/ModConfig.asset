@@ -13,7 +13,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 3DMaze
   title: 3D Maze
-  author: 
+  author: Spare Wizard, Timwi
   description: "[h1]This is a re-upload of a module created by Spare Wizard. Please
     [url=https://steamcommunity.com/workshop/filedetails/?id=752338147]unsubscribe
     from the old version[/url].[/h1]\n\n[i]You are in a maze of twisty passages, all
@@ -24,6 +24,6 @@ MonoBehaviour:
     PDF[/url]\r\n[url=http://ktane.timwi.de/HTML/3D%20Maze.html]Manual HTML[/url]\n\n[h1]Module
     ID[/h1]\nspwiz3DMaze\n\nTP support, rule-seed support and Souvenir support added
     by Timwi."
-  version: 0.1.1
+  version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 14ce9e975769a5a41b0d508614e823bc, type: 3}

@@ -1,11 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
 
+using Random = UnityEngine.Random;
+
 namespace ThreeDMaze
 {
-    sealed class Map
+    sealed class Map : IEquatable<Map>
     {
         public const int WIDTH = 8;
 
@@ -15,58 +18,60 @@ namespace ThreeDMaze
         public const int SOUTH = 2;
         public const int WEST = 3;
 
-        public const int RESULT_OK = 0;
-        public const int RESULT_SUCCESS = 1;
-        public const int RESULT_FAILURE = 2;
+        private readonly MapNode[,] mapData;
 
-        private MapNode[,] mapData;
+        private readonly int win_x1;
+        private readonly int win_x2;
+        private readonly int win_y1;
+        private readonly int win_y2;
+        private readonly int sol_x;
+        private readonly int sol_y;
 
-        private int win_x1;
-        private int win_x2;
-        private int win_y1;
-        private int win_y2;
-        private int sol_x;
-        private int sol_y;
+        private readonly int pl_x;
+        private readonly int pl_y;
+        private readonly int pl_dir;
+        private readonly int end_dir;
 
-        private int pl_x;
-        private int pl_y;
-        private int pl_dir;
-        private int end_dir;
-
-        public void turnLeft()
+        private Map(Map old, int new_pl_x, int new_pl_y, int new_pl_dir)
         {
-            pl_dir = bound(pl_dir - 1, 4);
+            mapData = old.mapData;
+            win_x1 = old.win_x1;
+            win_x2 = old.win_x2;
+            win_y1 = old.win_y1;
+            win_y2 = old.win_y2;
+            sol_x = old.sol_x;
+            sol_y = old.sol_y;
+            pl_x = new_pl_x;
+            pl_y = new_pl_y;
+            pl_dir = new_pl_dir;
+            end_dir = old.end_dir;
         }
 
-        public void turnRight()
+        public Map turnLeft()
         {
-            pl_dir = bound(pl_dir + 1, 4);
+            return new Map(this, pl_x, pl_y, bound(pl_dir - 1, 4));
         }
 
-        public int moveForward()
+        public Map turnRight()
         {
+            return new Map(this, pl_x, pl_y, bound(pl_dir + 1, 4));
+        }
+
+        // Returns:
+        //  true        — you solved the module
+        //  false       — you got a strike
+        //  Map        — you made a move
+        public object moveForward()
+        {
+            int new_x = bound(pl_x + xMod(1, 0, pl_dir), WIDTH);
+            int new_y = bound(pl_y + yMod(1, 0, pl_dir), WIDTH);
+
             if (!getEdge(pl_x, pl_y, pl_dir, 0, 0, pl_dir))
-            {
-                pl_x = bound(pl_x + xMod(1, 0, pl_dir), WIDTH);
-                pl_y = bound(pl_y + yMod(1, 0, pl_dir), WIDTH);
+                return new Map(this, new_x, new_y, pl_dir);
 
-                return RESULT_OK;
-            }
-            else
-            {
-                int new_x = bound(pl_x + xMod(1, 0, pl_dir), WIDTH);
-                int new_y = bound(pl_y + yMod(1, 0, pl_dir), WIDTH);
-
-                if ((pl_x == win_x1 && pl_y == win_y1 && new_x == win_x2 && new_y == win_y2) ||
-                    (pl_x == win_x2 && pl_y == win_y2 && new_x == win_x1 && new_y == win_y1))
-                {
-                    return RESULT_SUCCESS;
-                }
-                else
-                {
-                    return RESULT_FAILURE;
-                }
-            }
+            return
+                (pl_x == win_x1 && pl_y == win_y1 && new_x == win_x2 && new_y == win_y2) ||
+                (pl_x == win_x2 && pl_y == win_y2 && new_x == win_x1 && new_y == win_y1);
         }
 
         public MapView getDefaultMapView()
@@ -853,6 +858,18 @@ namespace ThreeDMaze
                     return 'W';
             }
             return '?';
+        }
+
+        public bool Equals(Map other) => other != null && other.pl_x == pl_x && other.pl_y == pl_y && other.pl_dir == pl_dir;
+        public override bool Equals(object obj) => obj is Map && Equals((Map) obj);
+
+        public override int GetHashCode()
+        {
+            var hashCode = -1309692464;
+            hashCode = hashCode * -1521134295 + pl_x.GetHashCode();
+            hashCode = hashCode * -1521134295 + pl_y.GetHashCode();
+            hashCode = hashCode * -1521134295 + pl_dir.GetHashCode();
+            return hashCode;
         }
     }
 }

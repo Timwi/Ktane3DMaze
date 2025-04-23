@@ -1,0 +1,10 @@
+{
+  "name": "3DMaze-Editor",
+  "references": [
+    "3DMaze"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": []
+}
